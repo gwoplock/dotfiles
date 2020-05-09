@@ -1,0 +1,6 @@
+#.zshexportrc
+export GPG_TTY=$(tty)
+export TERMINAL=gnome-terminal
+export EDITOR='nano'
+export PATH="$HOME/opt/cross/bin:$PATH"
+export PATH=/usr/sbin:$PATH

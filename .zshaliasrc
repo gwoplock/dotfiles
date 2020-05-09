@@ -1,0 +1,20 @@
+#.zshaliasrc
+# Preferred editor for local and remote sessions
+alias update_gentoo='sudo sh -c  -- "emaint -a sync && layman -S && emerge -uDU --keep-going --ask --with-bdeps=y @world && emerge @preserved-rebuild --ask && emerge --update --changed-use --deep @world && emerge -av --depclean --ask && eselect kernel set 1 && cd /usr/src/linux && make oldconfig && make -j8 && make modules_install -j8 && make install -j8 && grub-mkconfig -o /boot/grub/grub.cfg && reboot;"'
+alias update="sudo reflector --verbose -p https --sort rate --save /etc/pacman.d/mirrorlist && yay -Syu --noconfirm && reboot;"
+alias getbalance='garlicoin-cli -testnet getbalance'
+alias sudo='sudo '
+alias ls='ls -aLlH --color=auto '
+alias startx='startx -display :1 -- :1 vt1'
+alias bofh='telnet towel.blinkenlights.nl 666'
+eval $(thefuck --alias)
+alias fortune='fortune | cowsay'
+#alias clear='bofh; screenfetch'
+alias nano='nano -w'
+alias pastebin='curl -F c=@- https://ptpb.pw/'
+func git-switch() {
+	git fetch --all
+	git reset --hard origin/$1
+	git checkout $1
+}
+alias git-master='git-switch master'
