@@ -1,0 +1,211 @@
+#!/bin/zsh
+
+
+RED=#ff0000
+ORANGE=#ff6600
+GREEN=#008000
+WHITE=#FFFFFF
+
+printTime() {
+	echo -n "{\"full_text\":\""
+	echo -n "$(date +"%D %R:%S")"
+	echo -n "\",\"color\":\"$WHITE\"},"
+}
+
+printHostInfo() {
+	echo -n "{\"full_text\":\""
+	echo -n "$(whoami) logged onto $(uname --nodename) - $(uname --kernel-name --kernel-release --machine)"
+	echo -n "\",\"color\":\"$WHITE\"}"
+}
+
+printUptime () {
+echo -n "{\"full_text\":\""
+	echo -n "uptime: $(uptime -p | tail -c+4)"
+	echo -n "\",\"color\":\"$WHITE\"},"
+}
+
+CACHE_TIME=0
+CACHE_VALUE=0
+CACHE_TIMEOUT=$(((60*60)/6))
+
+printUpdates() {
+	echo -n "{\"full_text\":\""
+	if [ "$CACHE_TIME" -eq 0 ]; then
+		CACHE_VALUE=$(checkupdates+aur | wc -l)
+	fi
+	echo -n "updates: $CACHE_VALUE"
+	CACHE_TIME=$(((CACHE_TIME + 1) % CACHE_TIMEOUT))
+	if [ "$CACHE_VALUE" -gt 200 ]; then
+		echo -n "\",\"color\":\"$RED\"}"
+	elif [ "$CACHE_VALUE" -gt 100 ]; then
+		echo -n "\",\"color\":\"$ORANGE\"}"
+	else	
+		echo -n "\",\"color\":\"$GREEN\"}"
+	fi
+}
+
+printCPUInfo(){
+	CPU_FREQ=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq)
+	CPU_PERCENT=$(echo "100 - $(mpstat | grep "all" | awk 'BEGIN{FS=" "} {print $13}')" | bc)
+	echo -n "{\"full_text\":\""
+	echo -n "CPU Frequency: $(echo "$CPU_FREQ / 1000000" | bc -l | head -c 3) GHz"
+	echo -n "\",\"color\":\"$WHITE\"},"
+	echo -n "{\"full_text\":\""
+	echo -n "CPU Usage: $CPU_PERCENT %"
+	if [ "$(echo $((CPU_PERCENT * 100)) | head -c-2)" -gt $((90 * 100)) ]; then
+		echo -n "\",\"color\":\"$RED\"},"
+	elif [ "$(echo $((CPU_PERCENT * 100)) | head -c-2)" -gt $((90 * 100)) ]; then
+		echo -n "\",\"color\":\"$ORANGE\"},"
+	else
+		echo -n "\",\"color\":\"$GREEN\"},"
+	fi
+}
+
+printRamInfo() {
+	TOTAL_RAM=$(grep "MemTotal" /proc/meminfo | awk 'BEGIN{fs=" "} {print $2}')
+	AVAIL_RAM=$(grep "MemAv" /proc/meminfo | awk 'BEGIN{fs=" "} {print $2}')
+	USED_RAM=$((TOTAL_RAM - AVAIL_RAM))
+	RAM_PERCENT=$(echo "(1 - ($TOTAL_RAM - $USED_RAM) / $TOTAL_RAM) * 100" | bc -l | head -c 4) 
+	echo -n "{\"full_text\":\""
+	echo -n "Used Ram: $(echo "$USED_RAM / 1048576" | bc -l |head -c 4) Gb /  $(echo "$TOTAL_RAM / 1048576" | bc -l | head -c 5) Gb ($RAM_PERCENT%)"
+	if [ "$(echo $((RAM_PERCENT * 100)) | head -c 4)" -gt $((70 * 100)) ]; then
+		echo -n "\",\"color\":\"$RED\"},"
+	elif [ "$(echo $((RAM_PERCENT * 100)) | head -c 4)" -gt $((50 * 100)) ]; then
+		echo -n "\",\"color\":\"$ORANGE\"},"
+	else
+		echo -n "\",\"color\":\"$GREEN\"},"
+	fi
+}
+
+printSwapInfo() {
+	SWAP_TOTAL=$(grep "SwapTotal" /proc/meminfo | awk 'BEGIN{fs=" "} {print $2}')
+	SWAP_FREE=$(grep "SwapFree" /proc/meminfo | awk 'BEGIN{fs=" "} {print $2}')
+	SWAP_USED=$((SWAP_TOTAL - SWAP_FREE))
+	SWAP_PERCENT=$(echo "(1 - ($SWAP_TOTAL - $SWAP_USED) / $SWAP_TOTAL) * 100" | bc -l | head -c 4) 
+	echo -n "{\"full_text\":\""
+	echo -n "Used Swap: $(echo "$SWAP_USED / 1048576" | bc -l |head -c 4) Gb /  $(echo "$SWAP_TOTAL / 1048576" | bc -l | head -c 4) Gb ($SWAP_PERCENT%)"
+	if [ "$(echo $((SWAP_PERCENT * 1000)) | head -c-2)" -gt $((50 * 1000)) ]; then
+		echo -n "\",\"color\":\"$RED\"}"
+	elif [ "$(echo $((SWAP_PERCENT * 1000)) | head -c-2)" -gt $((30 * 1000)) ]; then
+		echo -n "\",\"color\":\"$ORANGE\"}"
+	elif [ "$(echo $((SWAP_PERCENT * 1000)) | head -c-2)" -lt $((1 * 1000)) ]; then
+		echo -n "\",\"color\":\"$WHITE\"}"
+	else
+		echo -n "\",\"color\":\"$GREEN\"}"
+	fi
+}
+
+printRootInfo() {
+	ROOT_PERCENT=$(df -h / | awk 'BEGIN{FS=" "} {print $5}' | tail -n+2  | head -c-2)
+	echo -n "{\"full_text\":\""
+	echo -n "/: $(df -h / | awk 'BEGIN{FS=" "} {printf ("%d Gb / %d\n",$3,$2)}' | tail -n+2) Gb ($ROOT_PERCENT%)"
+	if [ "$ROOT_PERCENT" -gt 90 ]; then
+		echo -n "\",\"color\":\"$RED\"},"
+	elif [ "$ROOT_PERCENT" -gt 50 ]; then
+		echo -n "\",\"color\":\"$ORANGE\"},"
+	else 
+		echo -n "\",\"color\":\"$GREEN\"},"
+	fi
+}
+
+printHomeInfo() {
+	HOME_PERCENT=$(df -h /home | awk 'BEGIN{FS=" "} {print $5}' | tail -n+2  | head -c-2)
+	echo -n "{\"full_text\":\""
+	echo -n "/: $(df -h /home | awk 'BEGIN{FS=" "} {printf ("%d Gb / %d\n",$3,$2)}' | tail -n+2) Gb ($HOME_PERCENT%)"
+	if [ "$HOME_PERCENT" -gt 90 ]; then
+		echo -n "\",\"color\":\"$RED\"}"
+	elif [ "$HOME_PERCENT" -gt 50 ]; then
+		echo -n "\",\"color\":\"$ORANGE\"}"
+	else 
+		echo -n "\",\"color\":\"$GREEN\"}"
+	fi
+}
+
+printWiFi(){
+	WIFI_IP=$(ifconfig wlp3s0u2 | grep -G "inet\s" | awk 'BEGIN{FS=" "} {print $2}')
+	echo -n "{\"full_text\":\""
+	if [ "$WIFI_IP" = "" ]; then
+		echo -n "wlp0s19f2u5: DISCONNECTED" 
+		echo -n "\",\"color\":\"$RED\"},"
+	else
+		echo -n "wlp0s19f2u5: $WIFI_IP"
+		echo -n "\",\"color\":\"$GREEN\"},"
+	fi	
+	
+	#TODO up/down speed, gateway
+}
+
+printEthernet() {
+	ETHERNET_IP=$(ifconfig enp2s0 | grep -G "inet\s" | awk 'BEGIN{FS=" "} {print $2}')
+	echo -n "{\"full_text\":\""
+	if [ "$ETHERNET_IP" = "" ]; then
+		echo -n "enp2s0: DISCONNECTED"
+		echo -n "\",\"color\":\"$RED\"}"
+	else
+		echo -n "enp2s0: $ETHERNET_IP"
+		echo -n "\",\"color\":\"$GREEN\"}"
+	fi	
+	#TODO up/down speed, gateway
+}
+
+printVolume() {
+	VOLUME_STATUS=$(amixer -M | grep Left: | awk 'BEGIN{FS=" "} {print $6}' | head -c-2 | tail -c+2)
+	echo -n "{\"full_text\":\""
+	if [ "$VOLUME_STATUS" = on ]; then 
+		echo -n "Volume: $(amixer -M | head -n 6 |tail --lines=1 | awk 'BEGIN{FS=" "} {print $5}' |head -c-2 | tail -c+2)"
+		echo -n "\",\"color\":\"$GREEN\"}"
+	else
+		echo -n "Volume: MUTED $(amixer -M | head -n 6 |tail --lines=1 | awk 'BEGIN{FS=" "} {print $5}' |head -c-2 | tail -c+2)"
+		echo -n "\",\"color\":\"$RED\"}"
+	fi
+}
+
+SLEEP=5
+
+printStatus() {
+	I=0
+	LINES=6
+	LINES_SLEEP=$((SLEEP * LINES))
+	while true; do
+		echo -n "["
+		printLine $I
+		I=$(((I + 1) % LINES_SLEEP))
+		echo  "],"
+		sleep 1s
+	done
+}
+
+printLine() {
+	printTime
+	case $(($1 / SLEEP)) in
+		0)
+			printHostInfo
+			;;
+		1)
+			printUptime
+			printUpdates
+			;;
+		2)
+			printCPUInfo
+			printRamInfo
+			printSwapInfo
+			;;
+		3)
+			printRootInfo
+			printHomeInfo
+			;;
+		4)
+			printWiFi
+			printEthernet
+			;;
+		5)
+			printVolume
+			;;
+	esac
+}
+
+echo '{"version":1}'
+echo '['
+echo '[],'
+printStatus
+

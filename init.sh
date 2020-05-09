@@ -6,4 +6,6 @@ ln .zshconfigrc ~/
 ln .zshexportrc ~/
 ln .zshpluginrc ~/
 ln .zshrc ~/
-
+ln htoprc ~/.config/htop/
+ln config ~/.config/i3
+ln status ~/.config/i3
