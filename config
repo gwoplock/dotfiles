@@ -191,8 +191,8 @@ bindsym XF86AudioMute exec amixer -D pulse sset Master toggle
 #bindsym XF86AudioNext exec "dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.Next"
 
 #screensaver
-exec --no-startup-id xautolock -time 1 -locker "i3lock-fancy -p" -corners ---- -cornerdelay 1 -cornersize 10
-bindsym $mod+y exec xdotool mousemove 0 0
+#exec --no-startup-id xautolock -time 1 -locker "i3lock-fancy -p" -corners ---- -cornerdelay 1 -cornersize 10
+#bindsym $mod+y exec xdotool mousemove 0 0
 
 #lock
 bindsym $mod+l exec i3lock-fancy -p
@@ -203,9 +203,9 @@ bindsym $mod+l exec i3lock-fancy -p
 #bindcode 114 exec nautilus
 #bindcode 140 exec gnome-calculator
 
-exec --no-startup-id transmission-qt 
+#exec --no-startup-id transmission-qt 
 
-exec --no-startup-id quasselclient
+#exec --no-startup-id quasselclient
 
 exec --no-startup-id nitrogen --restore
 
